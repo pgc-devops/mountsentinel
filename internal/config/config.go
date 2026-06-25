@@ -103,7 +103,7 @@ func Defaults() *Config {
 		Daemon: DaemonConfig{
 			CheckInterval:  Duration{30 * time.Second},
 			LogLevel:       "info",
-			ProcMountsPath: "/proc/mounts",
+			ProcMountsPath: "/proc/1/mounts",
 		},
 		Reboot: RebootConfig{
 			Enabled: true,

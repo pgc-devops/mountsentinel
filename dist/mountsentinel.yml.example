@@ -5,6 +5,9 @@ daemon:
   dry_run: false
   # info | debug | verbose
   log_level: "info"
+  # Read host mount state via PID 1's namespace to bypass ProtectSystem mount isolation.
+  # Change only if running outside systemd or in a container.
+  proc_mounts_path: "/proc/1/mounts"
 
 # Mounts to watch. Use mountpoint: "*" to watch all mounts (with exclusions).
 watch_mounts:

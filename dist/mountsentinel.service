@@ -39,8 +39,8 @@ LockPersonality=true
 # Allow read/write to state and runtime dirs
 ReadWritePaths=/var/lib/mountsentinel /run/mountsentinel
 
-# Allow reading proc
-ReadOnlyPaths=/proc/mounts
+# Read host mount state via PID 1's namespace (bypasses ProtectSystem private namespace)
+ReadOnlyPaths=/proc/1/mounts
 
 # Syscall filter: allow system services plus reboot
 SystemCallFilter=@system-service @reboot
