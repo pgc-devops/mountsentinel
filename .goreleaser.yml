@@ -59,9 +59,9 @@ nfpms:
         dst: /etc/mountsentinel.yml
         type: config|noreplace
         file_info:
-          mode: 0640
+          mode: 0600
           owner: root
-          group: mountsentinel
+          group: root
       - src: dist/zabbix/mountsentinel.conf
         dst: /etc/zabbix/zabbix_agentd.d/mountsentinel.conf
         type: config|noreplace
@@ -73,8 +73,8 @@ nfpms:
         type: dir
         file_info:
           mode: 0750
-          owner: mountsentinel
-          group: mountsentinel
+          owner: root
+          group: root
     scripts:
       preinstall: scripts/pkg/preinstall.sh
       postinstall: scripts/pkg/postinstall.sh

@@ -25,14 +25,6 @@ StartLimitBurst=5
 # systemd watchdog - mountsentinel sends WATCHDOG=1 each check cycle
 WatchdogSec=120s
 
-# Run as unprivileged user with minimal capabilities
-User=mountsentinel
-Group=mountsentinel
-
-# CAP_SYS_BOOT: needed to call reboot(2)
-AmbientCapabilities=CAP_SYS_BOOT
-CapabilityBoundingSet=CAP_SYS_BOOT
-
 # Hardening
 ProtectSystem=strict
 ProtectHome=true

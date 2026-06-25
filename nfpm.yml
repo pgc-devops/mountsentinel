@@ -36,9 +36,9 @@ contents:
     dst: /etc/mountsentinel.yml
     type: config|noreplace
     file_info:
-      mode: 0640
+      mode: 0600
       owner: root
-      group: mountsentinel
+      group: root
 
   # Zabbix UserParameter config (config|noreplace — preserve local edits)
   - src: ./dist/zabbix/mountsentinel.conf
@@ -54,8 +54,8 @@ contents:
     type: dir
     file_info:
       mode: 0750
-      owner: mountsentinel
-      group: mountsentinel
+      owner: root
+      group: root
 
 scripts:
   preinstall:  scripts/pkg/preinstall.sh

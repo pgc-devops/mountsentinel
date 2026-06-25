@@ -2,16 +2,16 @@
 # Runs after package files are placed on disk.
 set -euo pipefail
 
-# Ensure state dir ownership is correct (nfpm dir entry sets mode but not always owner).
+# Ensure state dir has correct permissions.
 if [ -d /var/lib/mountsentinel ]; then
-    chown mountsentinel:mountsentinel /var/lib/mountsentinel
+    chown root:root /var/lib/mountsentinel
     chmod 750 /var/lib/mountsentinel
 fi
 
-# Ensure config is readable by the daemon group.
+# Ensure config is only readable by root.
 if [ -f /etc/mountsentinel.yml ]; then
-    chown root:mountsentinel /etc/mountsentinel.yml
-    chmod 640 /etc/mountsentinel.yml
+    chown root:root /etc/mountsentinel.yml
+    chmod 600 /etc/mountsentinel.yml
 fi
 
 systemctl daemon-reload
