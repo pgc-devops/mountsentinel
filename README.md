@@ -81,7 +81,6 @@ sudo rpm -e mountsentinel              # stops service, keeps config + state
 
 ```bash
 git clone <repo>
-cd projects/systemhealthagent
 
 go mod tidy
 make build-static
