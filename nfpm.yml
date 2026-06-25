@@ -11,7 +11,7 @@ description: |
   and reboots the VM after a configurable delay. Implements exponential backoff to
   prevent reboot storms when the underlying issue persists.
 vendor: Pathcom
-homepage: https://github.com/pgc-devops
+homepage: https://github.com/pgc-devops/mountsentinel
 license: MIT
 
 contents:

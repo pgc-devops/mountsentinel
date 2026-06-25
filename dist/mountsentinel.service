@@ -1,6 +1,6 @@
 [Unit]
 Description=mountsentinel - filesystem read-only monitor and recovery daemon
-Documentation=https://github.com/pgc-devops/workinprogress2026/projects/systemhealthagent
+Documentation=https://github.com/pgc-devops/mountsentinel
 After=network.target local-fs.target
 
 [Service]
