@@ -24,6 +24,9 @@ watch_mounts:
   #     - "/tmp"
 
 reboot:
+  # Enable automatic reboot on read-only mount detection.
+  # Requires the process to run as root (uid 0).
+  enabled: true
   # Time to wait after detecting a read-only mount before rebooting.
   # This gives the SAN time to recover without a reboot.
   delay: "5m"

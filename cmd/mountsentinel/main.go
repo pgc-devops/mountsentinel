@@ -176,7 +176,18 @@ func runReset(args []string, store state.Store) {
 // --- daemon mode ---
 
 func runDaemon(cfg *config.Config, store state.Store) {
-	logger.Info("mountsentinel_starting", map[string]any{"version": version, "dry_run": cfg.Daemon.DryRun})
+	logger.Info("mountsentinel_starting", map[string]any{
+		"version":        version,
+		"dry_run":        cfg.Daemon.DryRun,
+		"reboot_enabled": cfg.Reboot.Enabled,
+	})
+
+	if cfg.Reboot.Enabled && os.Getuid() != 0 {
+		logger.Warn("reboot_enabled_but_not_root", map[string]any{
+			"uid": os.Getuid(),
+			"msg": "reboot will fail at trigger time: process must run as root",
+		})
+	}
 
 	st, err := store.Load()
 	if err != nil {
@@ -371,6 +382,22 @@ func triggerReboot(cfg *config.Config, store state.Store, st *state.State, rec *
 	}
 
 	_ = store.Save(st)
+
+	if !cfg.Reboot.Enabled {
+		logger.Warn("reboot_disabled_suppressing", map[string]any{
+			"mount": mp,
+			"msg":   "set reboot.enabled: true and run as root to enable automatic reboot",
+		})
+		rec.State = state.StateSuppressed
+		rec.Suppressed = true
+		notify.Webhook(cfg.Notify.Webhook, notify.Event{
+			Hostname: st.Hostname, Mountpoint: mp, Device: rec.Device,
+			Label: rec.Label, Event: "SUPPRESSED", State: rec.State,
+			RebootCount: len(rec.Reboots),
+		})
+		_ = store.Save(st)
+		return
+	}
 
 	action.RunHooks(cfg.Reboot.PreRebootHooks)
 

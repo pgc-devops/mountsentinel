@@ -3,6 +3,7 @@ package action
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -35,12 +36,17 @@ func RunHooks(hooks []config.HookConfig) {
 }
 
 // Reboot triggers a system reboot. In dry_run mode it only logs the intent.
+// Requires root (uid 0) to execute.
 func Reboot(dryRun bool) error {
 	if dryRun {
 		logger.Info("dry_run_reboot_skipped", map[string]any{
 			"msg": "would execute: systemctl reboot",
 		})
 		return nil
+	}
+
+	if os.Getuid() != 0 {
+		return fmt.Errorf("reboot requires root privileges (uid=%d)", os.Getuid())
 	}
 
 	logger.Info("executing_reboot")

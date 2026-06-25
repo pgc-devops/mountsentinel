@@ -45,6 +45,7 @@ type WatchMount struct {
 }
 
 type RebootConfig struct {
+	Enabled        bool         `yaml:"enabled"`
 	Delay          Duration     `yaml:"delay"`
 	PreRebootHooks []HookConfig `yaml:"pre_reboot_hooks"`
 }
@@ -105,7 +106,8 @@ func Defaults() *Config {
 			ProcMountsPath: "/proc/mounts",
 		},
 		Reboot: RebootConfig{
-			Delay: Duration{5 * time.Minute},
+			Enabled: true,
+			Delay:   Duration{5 * time.Minute},
 		},
 		Backoff: BackoffConfig{
 			Window:     Duration{24 * time.Hour},
