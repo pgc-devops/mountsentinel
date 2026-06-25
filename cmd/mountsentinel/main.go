@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sort"
 	"syscall"
 	"time"
 
@@ -110,19 +111,46 @@ func runStatus(args []string, store state.Store, cfg *config.Config) {
 		os.Exit(1)
 	}
 
-	degraded := false
-	fmt.Printf("%-30s %-12s %-8s %s\n", "MOUNT", "STATE", "REBOOTS", "DETECTED")
-	fmt.Printf("%-30s %-12s %-8s %s\n", "-----", "-----", "-------", "--------")
-	for _, r := range st.Mounts {
-		if mountFlag != "" && r.Mountpoint != mountFlag {
-			continue
-		}
+	// Collect all mountpoints: from state + configured non-wildcards not yet in state.
+	type row struct {
+		mp      string
+		state   state.MountState
+		reboots int
+		det     string
+	}
+	rowMap := make(map[string]row)
+	for mp, r := range st.Mounts {
 		det := "-"
 		if r.DetectedAt != nil {
 			det = r.DetectedAt.Format(time.RFC3339)
 		}
-		fmt.Printf("%-30s %-12s %-8d %s\n", r.Mountpoint, r.State, len(r.Reboots), det)
-		if r.State != state.StateHealthy {
+		rowMap[mp] = row{mp: mp, state: r.State, reboots: len(r.Reboots), det: det}
+	}
+	for _, wm := range cfg.WatchMounts {
+		if wm.Mountpoint == "*" {
+			continue
+		}
+		if _, exists := rowMap[wm.Mountpoint]; !exists {
+			rowMap[wm.Mountpoint] = row{mp: wm.Mountpoint, state: "UNKNOWN", reboots: 0, det: "-"}
+		}
+	}
+
+	keys := make([]string, 0, len(rowMap))
+	for k := range rowMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	degraded := false
+	fmt.Printf("%-30s %-12s %-8s %s\n", "MOUNT", "STATE", "REBOOTS", "DETECTED")
+	fmt.Printf("%-30s %-12s %-8s %s\n", "-----", "-----", "-------", "--------")
+	for _, mp := range keys {
+		if mountFlag != "" && mp != mountFlag {
+			continue
+		}
+		r := rowMap[mp]
+		fmt.Printf("%-30s %-12s %-8d %s\n", r.mp, r.state, r.reboots, r.det)
+		if r.state != state.StateHealthy && r.state != "UNKNOWN" {
 			degraded = true
 		}
 	}
