@@ -254,6 +254,7 @@ func runDaemon(cfg *config.Config, store state.Store) {
 					cfg = newCfg
 					ticker.Reset(cfg.Daemon.CheckInterval.Duration)
 					logger.Info("config_reloaded")
+					st = runCheck(cfg, store, st)
 				}
 			default:
 				logger.Info("mountsentinel_stopping", map[string]any{"signal": sig.String()})
