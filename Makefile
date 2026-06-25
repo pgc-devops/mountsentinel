@@ -5,8 +5,9 @@ VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "
 LDFLAGS    := -ldflags "-X main.version=$(VERSION) -s -w"
 INSTALL    := /usr/local/bin
 NFPM       ?= $(shell command -v nfpm 2>/dev/null || echo "$(shell go env GOPATH)/bin/nfpm")
+GORELEASER ?= $(shell command -v goreleaser 2>/dev/null || echo "goreleaser")
 
-.PHONY: all build test clean install lint packages deb rpm apk nfpm-install
+.PHONY: all build test clean install lint packages deb rpm apk nfpm-install release-snapshot release-dry-run goreleaser-install
 
 all: build
 
@@ -52,6 +53,15 @@ apk: build-static
 
 nfpm-install:
 	go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+
+goreleaser-install:
+	go install github.com/goreleaser/goreleaser/v2@latest
+
+release-snapshot:
+	$(GORELEASER) release --snapshot --clean
+
+release-dry-run:
+	$(GORELEASER) release --skip=publish --clean
 
 dep:
 	go mod tidy

@@ -1,0 +1,93 @@
+daemon:
+  # How often to check /proc/mounts
+  check_interval: "30s"
+  # Log nothing to stdout and only log on reboot — use dry_run: true in staging
+  dry_run: false
+  # info | debug | verbose
+  log_level: "info"
+
+# Mounts to watch. Use mountpoint: "*" to watch all mounts (with exclusions).
+watch_mounts:
+  # Watch specific iSCSI data mount
+  - mountpoint: "/data"
+    device: "/dev/sdb1"
+    label: "iscsi-data"
+
+  # Watch all mounts except common pseudo-filesystems.
+  # Uncomment to enable wildcard mode.
+  # - mountpoint: "*"
+  #   exclude:
+  #     - "/proc"
+  #     - "/sys"
+  #     - "/dev"
+  #     - "/run"
+  #     - "/tmp"
+
+reboot:
+  # Time to wait after detecting a read-only mount before rebooting.
+  # This gives the SAN time to recover without a reboot.
+  delay: "5m"
+
+  # Commands to run before rebooting (e.g. notify team, flush logs).
+  # Failures are logged but do not block the reboot.
+  pre_reboot_hooks: []
+  # pre_reboot_hooks:
+  #   - cmd: "/usr/local/bin/notify-oncall.sh"
+  #     timeout: "30s"
+
+backoff:
+  # Rolling window for counting prior reboots.
+  window: "24h"
+  # Base delay for the first reboot in a window.
+  base_delay: "5m"
+  # Each subsequent reboot multiplies the delay by this factor.
+  multiplier: 2.0
+  # Absolute maximum delay. When reached, auto-reboot is suppressed until
+  # an operator runs: fsguard reset --mount <mountpoint>
+  max_delay: "4h"
+  # Random jitter added to each delay to prevent thundering herd.
+  jitter: "30s"
+
+state:
+  # Where to persist reboot history and mount state.
+  # file   - /var/lib/fsguard/state.json (survives reboot, at risk if / goes ro)
+  # tmpfs  - /run/fsguard/state.json     (always writable RAM, lost on reboot — recommended for iSCSI)
+  # xenstore - xenstore key on XCP-ng/XenServer VMs (always writable, lost on reboot)
+  # memory   - in-process only, lost on daemon restart
+  # remote   - HTTP PUT/GET to remote_url
+  backend: "file"
+  file_path: "/var/lib/fsguard/state.json"
+  # remote_url: "http://state-server.internal/fsguard"
+  # Backends to try if the primary fails (in order).
+  fallback_backends:
+    - "tmpfs"
+    - "memory"
+
+notify:
+  # Webhook fired on state transitions: DETECTED, REBOOTING, RECOVERED, SUPPRESSED.
+  # Slack example:
+  # webhook:
+  #   url: "https://hooks.slack.com/services/T00/B00/xxx"
+  #   method: "POST"
+  #   timeout: "10s"
+  #   body_template: |
+  #     {"text": ":warning: *{{.Hostname}}* mount `{{.Mountpoint}}` → *{{.Event}}* (reboots: {{.RebootCount}})"}
+  #
+  # PagerDuty example:
+  # webhook:
+  #   url: "https://events.pagerduty.com/v2/enqueue"
+  #   method: "POST"
+  #   headers:
+  #     Authorization: "Token token=YOUR_KEY"
+  #   body_template: |
+  #     {"routing_key":"YOUR_KEY","event_action":"trigger","payload":{"summary":"{{.Hostname}} {{.Mountpoint}} {{.Event}}","severity":"critical","source":"{{.Hostname}}"}}
+
+zabbix:
+  enabled: false
+  # Path to write the Zabbix state JSON. Must be on tmpfs (/run) — always writable.
+  state_file: "/run/fsguard/zabbix.json"
+
+metrics:
+  enabled: false
+  # Prometheus text-format metrics endpoint.
+  addr: ":9101"

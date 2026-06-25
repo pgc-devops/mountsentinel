@@ -1,0 +1,58 @@
+[Unit]
+Description=mountsentinel - filesystem read-only monitor and recovery daemon
+Documentation=https://github.com/pgc-devops/workinprogress2026/projects/systemhealthagent
+After=network.target local-fs.target
+
+[Service]
+Type=notify
+NotifyAccess=main
+
+ExecStart=/usr/local/bin/mountsentinel --config /etc/mountsentinel.yml
+ExecReload=/bin/kill -HUP $MAINPID
+
+# State file and runtime directory (tmpfs, always writable)
+RuntimeDirectory=mountsentinel
+RuntimeDirectoryMode=0750
+StateDirectory=mountsentinel
+StateDirectoryMode=0750
+
+# Restart on failure with rate limiting
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=60s
+StartLimitBurst=5
+
+# systemd watchdog - mountsentinel sends WATCHDOG=1 each check cycle
+WatchdogSec=120s
+
+# Run as unprivileged user with minimal capabilities
+User=mountsentinel
+Group=mountsentinel
+
+# CAP_SYS_BOOT: needed to call reboot(2)
+AmbientCapabilities=CAP_SYS_BOOT
+CapabilityBoundingSet=CAP_SYS_BOOT
+
+# Hardening
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=false
+NoNewPrivileges=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+# Allow read/write to state and runtime dirs
+ReadWritePaths=/var/lib/mountsentinel /run/mountsentinel
+
+# Allow reading proc
+ReadOnlyPaths=/proc/mounts
+
+# Syscall filter: allow system services plus reboot
+SystemCallFilter=@system-service @reboot
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target
