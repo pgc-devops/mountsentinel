@@ -2,6 +2,8 @@
 Description=mountsentinel - filesystem read-only monitor and recovery daemon
 Documentation=https://github.com/pgc-devops/mountsentinel
 After=network.target local-fs.target
+StartLimitIntervalSec=60s
+StartLimitBurst=5
 
 [Service]
 Type=notify
@@ -19,8 +21,6 @@ StateDirectoryMode=0750
 # Restart on failure with rate limiting
 Restart=on-failure
 RestartSec=5s
-StartLimitIntervalSec=60s
-StartLimitBurst=5
 
 # systemd watchdog - mountsentinel sends WATCHDOG=1 each check cycle
 WatchdogSec=120s
