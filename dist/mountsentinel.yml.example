@@ -11,10 +11,10 @@ daemon:
 
 # Mounts to watch. Use mountpoint: "*" to watch all mounts (with exclusions).
 watch_mounts:
-  # Watch specific iSCSI data mount
-  - mountpoint: "/data"
-    device: "/dev/sdb1"
-    label: "iscsi-data"
+  - mountpoint: "/"
+  - mountpoint: "/usr"
+  - mountpoint: "/var"
+  - mountpoint: "/home"
 
   # Watch all mounts except common pseudo-filesystems.
   # Uncomment to enable wildcard mode.
@@ -49,21 +49,21 @@ backoff:
   # Each subsequent reboot multiplies the delay by this factor.
   multiplier: 2.0
   # Absolute maximum delay. When reached, auto-reboot is suppressed until
-  # an operator runs: fsguard reset --mount <mountpoint>
+  # an operator runs: mountsentinel reset --mount <mountpoint>
   max_delay: "4h"
   # Random jitter added to each delay to prevent thundering herd.
   jitter: "30s"
 
 state:
   # Where to persist reboot history and mount state.
-  # file   - /var/lib/fsguard/state.json (survives reboot, at risk if / goes ro)
-  # tmpfs  - /run/fsguard/state.json     (always writable RAM, lost on reboot — recommended for iSCSI)
+  # file   - /var/lib/mountsentinel/state.json (survives reboot, at risk if / goes ro)
+  # tmpfs  - /run/mountsentinel/state.json     (always writable RAM, lost on reboot — recommended for iSCSI)
   # xenstore - xenstore key on XCP-ng/XenServer VMs (always writable, lost on reboot)
   # memory   - in-process only, lost on daemon restart
   # remote   - HTTP PUT/GET to remote_url
   backend: "file"
-  file_path: "/var/lib/fsguard/state.json"
-  # remote_url: "http://state-server.internal/fsguard"
+  file_path: "/var/lib/mountsentinel/state.json"
+  # remote_url: "http://state-server.internal/mountsentinel"
   # Backends to try if the primary fails (in order).
   fallback_backends:
     - "tmpfs"
@@ -91,7 +91,7 @@ notify:
 zabbix:
   enabled: false
   # Path to write the Zabbix state JSON. Must be on tmpfs (/run) — always writable.
-  state_file: "/run/fsguard/zabbix.json"
+  state_file: "/run/mountsentinel/zabbix.json"
 
 metrics:
   enabled: false
