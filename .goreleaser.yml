@@ -1,0 +1,105 @@
+version: 2
+
+project_name: mountsentinel
+dist: release
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: mountsentinel
+    main: ./cmd/mountsentinel
+    binary: mountsentinel
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: mountsentinel
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    files:
+      - dist/mountsentinel.service
+      - dist/mountsentinel.yml.example
+      - dist/zabbix/mountsentinel.conf
+      - scripts/install.sh
+
+nfpms:
+  - id: packages
+    package_name: mountsentinel
+    vendor: Pathcom
+    homepage: https://github.com/pgc-devops/mountsentinel
+    maintainer: PGC DevOps <nospam@nospam.pathcom.com>
+    description: |
+      Filesystem read-only monitor and recovery daemon for iSCSI SAN environments.
+      Detects kernel read-only remounts caused by SAN failover or network interruption
+      and reboots the VM after a configurable delay. Implements exponential backoff to
+      prevent reboot storms when the underlying issue persists.
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/local/bin
+    contents:
+      - src: dist/mountsentinel.service
+        dst: /lib/systemd/system/mountsentinel.service
+        file_info:
+          mode: 0644
+          owner: root
+          group: root
+      - src: dist/mountsentinel.yml.example
+        dst: /etc/mountsentinel.yml
+        type: config|noreplace
+        file_info:
+          mode: 0640
+          owner: root
+          group: mountsentinel
+      - src: dist/zabbix/mountsentinel.conf
+        dst: /etc/zabbix/zabbix_agentd.d/mountsentinel.conf
+        type: config|noreplace
+        file_info:
+          mode: 0644
+          owner: root
+          group: root
+      - dst: /var/lib/mountsentinel
+        type: dir
+        file_info:
+          mode: 0750
+          owner: mountsentinel
+          group: mountsentinel
+    scripts:
+      preinstall: scripts/pkg/preinstall.sh
+      postinstall: scripts/pkg/postinstall.sh
+      preremove: scripts/pkg/preremove.sh
+      postremove: scripts/pkg/postremove.sh
+    overrides:
+      deb:
+        dependencies:
+          - systemd
+        recommends:
+          - zabbix-agent
+          - zabbix-agent2
+      rpm:
+        dependencies:
+          - systemd
+        recommends:
+          - zabbix-agent
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
