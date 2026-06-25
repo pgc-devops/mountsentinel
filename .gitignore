@@ -33,3 +33,6 @@ release/
 # Editor/IDE
 # .idea/
 # .vscode/
+
+mountsentinel
+specs/
