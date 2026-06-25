@@ -1,0 +1,77 @@
+name: mountsentinel
+arch: amd64
+platform: linux
+version: ${VERSION}
+version_schema: semver
+
+maintainer: PGC DevOps <nospam@nospam.pathcom.com>
+description: |
+  Filesystem read-only monitor and recovery daemon for iSCSI SAN environments.
+  Detects kernel read-only remounts caused by SAN failover or network interruption
+  and reboots the VM after a configurable delay. Implements exponential backoff to
+  prevent reboot storms when the underlying issue persists.
+vendor: Pathcom
+homepage: https://github.com/pgc-devops
+license: MIT
+
+contents:
+  # Main binary
+  - src: ./mountsentinel
+    dst: /usr/local/bin/mountsentinel
+    file_info:
+      mode: 0755
+      owner: root
+      group: root
+
+  # systemd unit
+  - src: ./dist/mountsentinel.service
+    dst: /lib/systemd/system/mountsentinel.service
+    file_info:
+      mode: 0644
+      owner: root
+      group: root
+
+  # Default config (marked config|noreplace — not overwritten on upgrade)
+  - src: ./dist/mountsentinel.yml.example
+    dst: /etc/mountsentinel.yml
+    type: config|noreplace
+    file_info:
+      mode: 0640
+      owner: root
+      group: mountsentinel
+
+  # Zabbix UserParameter config (config|noreplace — preserve local edits)
+  - src: ./dist/zabbix/mountsentinel.conf
+    dst: /etc/zabbix/zabbix_agentd.d/mountsentinel.conf
+    type: config|noreplace
+    file_info:
+      mode: 0644
+      owner: root
+      group: root
+
+  # State directory (created with correct ownership)
+  - dst: /var/lib/mountsentinel
+    type: dir
+    file_info:
+      mode: 0750
+      owner: mountsentinel
+      group: mountsentinel
+
+scripts:
+  preinstall:  scripts/pkg/preinstall.sh
+  postinstall: scripts/pkg/postinstall.sh
+  preremove:   scripts/pkg/preremove.sh
+  postremove:  scripts/pkg/postremove.sh
+
+overrides:
+  deb:
+    depends:
+      - systemd
+    recommends:
+      - zabbix-agent
+      - zabbix-agent2
+  rpm:
+    depends:
+      - systemd
+    recommends:
+      - zabbix-agent
