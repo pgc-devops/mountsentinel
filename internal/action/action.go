@@ -1,15 +1,48 @@
 package action
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/pgc-devops/mountsentinel/internal/config"
 	"github.com/pgc-devops/mountsentinel/internal/logger"
 )
+
+// capSysBoot is Linux capability 22 (CAP_SYS_BOOT), required for reboot(2).
+const capSysBoot = 22
+
+// HasCapSysBoot reports whether the process has CAP_SYS_BOOT in its effective
+// capability set, as read from /proc/self/status. Processes running as root
+// (uid 0) always have this capability even if the CapEff field omits it.
+func HasCapSysBoot() bool {
+	if os.Getuid() == 0 {
+		return true
+	}
+	data, err := os.ReadFile("/proc/self/status")
+	if err != nil {
+		return false
+	}
+	for _, line := range bytes.Split(data, []byte("\n")) {
+		if !bytes.HasPrefix(line, []byte("CapEff:")) {
+			continue
+		}
+		fields := bytes.Fields(line)
+		if len(fields) < 2 {
+			return false
+		}
+		capEff, err := strconv.ParseUint(string(fields[1]), 16, 64)
+		if err != nil {
+			return false
+		}
+		return capEff&(1<<capSysBoot) != 0
+	}
+	return false
+}
 
 // RunHooks executes pre-reboot hooks in order. A hook failure is logged but
 // does not prevent subsequent hooks or the reboot from proceeding.
@@ -45,8 +78,8 @@ func Reboot(dryRun bool) error {
 		return nil
 	}
 
-	if os.Getuid() != 0 {
-		return fmt.Errorf("reboot requires root privileges (uid=%d)", os.Getuid())
+	if !HasCapSysBoot() {
+		return fmt.Errorf("reboot requires root or CAP_SYS_BOOT (uid=%d)", os.Getuid())
 	}
 
 	logger.Info("executing_reboot")

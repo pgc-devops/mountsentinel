@@ -210,10 +210,10 @@ func runDaemon(cfg *config.Config, store state.Store) {
 		"reboot_enabled": cfg.Reboot.Enabled,
 	})
 
-	if cfg.Reboot.Enabled && os.Getuid() != 0 {
-		logger.Warn("reboot_enabled_but_not_root", map[string]any{
+	if cfg.Reboot.Enabled && !action.HasCapSysBoot() {
+		logger.Warn("reboot_enabled_but_unprivileged", map[string]any{
 			"uid": os.Getuid(),
-			"msg": "reboot will fail at trigger time: process must run as root",
+			"msg": "reboot will fail at trigger time: process needs root or CAP_SYS_BOOT",
 		})
 	}
 

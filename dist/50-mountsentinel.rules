@@ -1,0 +1,10 @@
+/* Allow the mountsentinel service account to trigger a system reboot via
+   systemd-logind without requiring interactive authentication. The service
+   runs with CAP_SYS_BOOT so reboot(2) via "reboot -f" already works, but
+   this rule also lets "systemctl reboot" succeed over D-Bus. */
+polkit.addRule(function(action, subject) {
+    if (action.id === "org.freedesktop.login1.reboot" &&
+        subject.user === "mountsentinel") {
+        return polkit.Result.YES;
+    }
+});

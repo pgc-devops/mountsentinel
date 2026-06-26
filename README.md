@@ -23,9 +23,30 @@ If a mount returns to `rw` before the delay expires, the reboot is cancelled and
 
 ### Prerequisites
 
-- Go 1.22+
-- Linux (systemd)
-- XenServer / XCP-ng (optional: for xenstore backend)
+- Linux with **systemd ≥ 229** (see [Supported Distributions](#supported-distributions))
+- For building from source: **Go 1.22+**
+- Optional: XenServer / XCP-ng — for `xenstore` state backend
+- Optional: polkit with JavaScript rules — enables `systemctl reboot` over D-Bus; `reboot -f` via `CAP_SYS_BOOT` is used as fallback when polkit JS rules are unavailable
+
+### Supported Distributions
+
+| Distribution | Min version | systemd | Package | polkit JS rules |
+|---|---|---|---|---|
+| Ubuntu | 18.04 LTS | 237 | `.deb` | Ubuntu 24.04+ only |
+| Debian | 9 (Stretch) | 231 | `.deb` | Debian 12+ only |
+| RHEL | 8 | 239 | `.rpm` | Yes (0.115) |
+| CentOS Stream | 8 | 239 | `.rpm` | Yes |
+| Rocky Linux | 8 | 239 | `.rpm` | Yes |
+| AlmaLinux | 8 | 239 | `.rpm` | Yes |
+| openSUSE Leap | 15.0 | 237 | manual | Yes |
+| SLES | 15 | 239 | manual | Yes |
+| Alpine | ✗ | — | — | Uses OpenRC by default |
+
+> **RHEL/CentOS 7 is not supported.** systemd 219 predates `AmbientCapabilities` (systemd ≥ 229 required).
+
+> **Ubuntu ≤ 22.04 and Debian ≤ 11** ship polkit 0.105 which does not process `.rules` files. The polkit rule is not installed on these systems; reboots use `reboot -f` via `CAP_SYS_BOOT` instead.
+
+> **Alpine Linux**: the `.apk` package can be built but Alpine uses OpenRC by default and does not ship systemd. Not supported in standard Alpine deployments.
 
 ---
 
@@ -95,6 +116,7 @@ The install script:
 - Installs binary to `/usr/local/bin/mountsentinel`
 - Installs systemd unit to `/etc/systemd/system/mountsentinel.service`
 - Installs example config to `/etc/mountsentinel.yml` (if not present)
+- Installs polkit rule to `/etc/polkit-1/rules.d/` (if polkit JS rules are supported)
 - Installs Zabbix UserParameter config (if `/etc/zabbix/zabbix_agentd.d/` exists)
 
 ---
@@ -155,16 +177,18 @@ VERSION=1.0.0 make packages
 | `/lib/systemd/system/mountsentinel.service` | systemd unit |
 | `/etc/mountsentinel.yml` | Default config (`config\|noreplace` — not overwritten on upgrade) |
 | `/etc/zabbix/zabbix_agentd.d/mountsentinel.conf` | Zabbix UserParameter config |
+| `/usr/share/mountsentinel/50-mountsentinel.rules` | polkit rule (source; postinstall deploys conditionally) |
+| `/etc/polkit-1/rules.d/50-mountsentinel.rules` | Deployed by postinstall only when polkit JS rules are supported |
 | `/var/lib/mountsentinel/` | State directory (owned by `mountsentinel` user) |
 
 ### Package lifecycle
 
 | Event | Behaviour |
 |---|---|
-| Fresh install | Creates user, enables service, prints start instructions |
-| Upgrade | Restarts daemon if running; does not touch config |
+| Fresh install | Creates `mountsentinel` user, enables service, installs polkit rule if supported |
+| Upgrade | Restarts daemon if running; does not touch config or polkit rule |
 | Remove | Stops and disables service; keeps config and state |
-| Purge / `rpm -e` | Also deletes `mountsentinel` user and `/var/lib/mountsentinel` |
+| Purge / `rpm -e` | Also removes polkit rule and `/var/lib/mountsentinel` |
 
 ---
 
@@ -421,7 +445,10 @@ sudo mount -o remount,rw /data
 ## Security
 
 - Runs as unprivileged `mountsentinel` system user
-- Only `CAP_SYS_BOOT` capability granted (required for reboot syscall)
-- Full systemd sandboxing: `ProtectSystem=strict`, `PrivateTmp`, `MemoryDenyWriteExecute`
-- Config file readable by `mountsentinel` group only (mode 640)
-- State file in `/var/lib/mountsentinel/` (mode 750, owned by mountsentinel)
+- Only `CAP_SYS_BOOT` capability granted via `AmbientCapabilities` — no other root privileges
+- Reboot path: `systemctl reboot` via D-Bus (requires polkit JS rule, see below), falls back to `reboot -f` using `CAP_SYS_BOOT` directly
+- Polkit rule (`/etc/polkit-1/rules.d/50-mountsentinel.rules`) installed automatically on: RHEL/Rocky/AlmaLinux 8+, Debian 12+, Ubuntu 24.04+
+- On Ubuntu ≤ 22.04 and Debian ≤ 11: polkit JS rules not supported; `reboot -f` fallback is used
+- Full systemd sandboxing: `ProtectSystem=strict`, `PrivateTmp`, `MemoryDenyWriteExecute`, `NoNewPrivileges`
+- Config file: mode 640, `root:mountsentinel` — readable by service user, not world
+- State directory: `/var/lib/mountsentinel/` mode 750, owned by `mountsentinel`

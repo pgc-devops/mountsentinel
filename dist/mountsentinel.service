@@ -8,6 +8,8 @@ StartLimitBurst=5
 [Service]
 Type=notify
 NotifyAccess=main
+User=mountsentinel
+Group=mountsentinel
 
 ExecStart=/usr/local/bin/mountsentinel --config /etc/mountsentinel.yml
 ExecReload=/bin/kill -HUP $MAINPID
@@ -24,6 +26,10 @@ RestartSec=5s
 
 # systemd watchdog - mountsentinel sends WATCHDOG=1 each check cycle
 WatchdogSec=120s
+
+# Grant only the reboot capability; drop everything else.
+AmbientCapabilities=CAP_SYS_BOOT
+CapabilityBoundingSet=CAP_SYS_BOOT
 
 # Hardening
 ProtectSystem=strict

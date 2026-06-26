@@ -46,6 +46,31 @@ else
     echo "    $CONFIG_DST already exists, skipping"
 fi
 
+echo "==> Installing polkit rule (requires polkit with JavaScript rules support)"
+# new polkit >= 121 (Debian 12+, Ubuntu 24.04+) always has JS rules.
+# old polkit >= 0.106 on RHEL-family is compiled with mozjs by Red Hat.
+# Ubuntu <= 22.04 and Debian <= 11 ship polkit 0.105 — silently ignores .rules files.
+POLKIT_RULES_DIR="/etc/polkit-1/rules.d"
+POLKIT_RULE_SRC="./dist/50-mountsentinel.rules"
+_polkit_supports_js=false
+if [[ -d "$POLKIT_RULES_DIR" ]] && command -v pkaction >/dev/null 2>&1; then
+    _pver=$(pkaction --version 2>/dev/null | awk '{print $NF}')
+    _pmajor=$(printf '%s' "$_pver" | cut -d. -f1)
+    _pminor=$(printf '%s' "$_pver" | cut -d. -f2)
+    if (( _pmajor >= 121 )) 2>/dev/null; then
+        _polkit_supports_js=true
+    elif (( _pmajor == 0 && ${_pminor:-0} >= 106 )) 2>/dev/null && [[ -f /etc/redhat-release ]]; then
+        _polkit_supports_js=true
+    fi
+fi
+if [[ "$_polkit_supports_js" == "true" ]] && [[ -f "$POLKIT_RULE_SRC" ]]; then
+    install -m 644 -o root -g root "$POLKIT_RULE_SRC" "$POLKIT_RULES_DIR/50-mountsentinel.rules"
+    systemctl reload polkit 2>/dev/null || true
+    echo "    installed — systemctl reboot now authorised for mountsentinel user"
+else
+    echo "    skipped (polkit JS rules not supported; reboot -f fallback via CAP_SYS_BOOT)"
+fi
+
 echo "==> Installing Zabbix UserParameter config (skip if zabbix_agentd.d not found)"
 if [[ -d "$(dirname "$ZABBIX_CONF_DST")" ]]; then
     install -m 644 -o root -g root "$ZABBIX_CONF_SRC" "$ZABBIX_CONF_DST"

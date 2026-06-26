@@ -36,7 +36,15 @@ contents:
     dst: /etc/mountsentinel.yml
     type: config|noreplace
     file_info:
-      mode: 0600
+      mode: 0640
+      owner: root
+      group: mountsentinel
+
+  # Polkit rule (shipped as data; postinstall deploys to /etc/polkit-1/rules.d/ if polkit present)
+  - src: ./dist/50-mountsentinel.rules
+    dst: /usr/share/mountsentinel/50-mountsentinel.rules
+    file_info:
+      mode: 0644
       owner: root
       group: root
 
@@ -54,8 +62,8 @@ contents:
     type: dir
     file_info:
       mode: 0750
-      owner: root
-      group: root
+      owner: mountsentinel
+      group: mountsentinel
 
 scripts:
   preinstall:  scripts/pkg/preinstall.sh
