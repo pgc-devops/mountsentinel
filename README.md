@@ -358,13 +358,19 @@ mountsentinel writes `/run/mountsentinel/zabbix.json` (tmpfs, always writable) o
      state_file: "/run/mountsentinel/zabbix.json"
    ```
 
-2. Install agent config (done automatically by `scripts/install.sh` and the Ansible role):
+2. Add the Zabbix agent user to the `mountsentinel` group so it can read `/etc/mountsentinel.yml` (mode 640). Done automatically by the Ansible role when `mountsentinel_zabbix_enabled: true`.
+   ```bash
+   sudo usermod -aG mountsentinel zabbix
+   sudo systemctl restart zabbix-agent   # restart required — reload is not enough
+   ```
+
+3. Install agent config (done automatically by `scripts/install.sh` and the Ansible role):
    ```bash
    sudo cp dist/zabbix/mountsentinel.conf /etc/zabbix/zabbix_agentd.d/
    sudo systemctl restart zabbix-agent
    ```
 
-3. Import the Zabbix template:
+4. Import the Zabbix template:
    - In Zabbix UI: **Configuration → Templates → Import**
    - Select `dist/zabbix/mountsentinel_template.xml`
    - Requires Zabbix 6.4+
