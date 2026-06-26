@@ -1,3 +1,8 @@
+// Copyright (c) 2026 CiteNet Internet. All rights reserved.
+// Author: Michael Moscovitch
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the repository root for details.
+
 package backoff
 
 import (
