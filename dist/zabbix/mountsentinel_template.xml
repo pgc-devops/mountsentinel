@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>6.4</version>
+    <template_groups>
+        <template_group>
+            <uuid>9f8e7d6c5b4a43928170c1d2e3f40000</uuid>
+            <name>Templates/Applications</name>
+        </template_group>
+    </template_groups>
+    <templates>
+        <template>
+            <uuid>9f8e7d6c5b4a43928170c1d2e3f40001</uuid>
+            <template>MountSentinel by Zabbix agent</template>
+            <name>MountSentinel by Zabbix agent</name>
+            <description>Monitors the mountsentinel filesystem read-only detection daemon.
+
+Requires:
+  - mountsentinel installed and running with zabbix.enabled: true
+  - Zabbix agent UserParameters from /etc/zabbix/zabbix_agentd.d/mountsentinel.conf
+    (installed automatically by the package or Ansible role)
+
+All per-mount items are auto-discovered via LLD (mountsentinel.discovery UserParameter).</description>
+            <groups>
+                <group>
+                    <name>Templates/Applications</name>
+                </group>
+            </groups>
+            <items>
+                <item>
+                    <uuid>9f8e7d6c5b4a43928170c1d2e3f40010</uuid>
+                    <name>Service: active state</name>
+                    <type>ZABBIX_PASSIVE</type>
+                    <key>systemd.unit.info[mountsentinel.service,ActiveState]</key>
+                    <delay>60s</delay>
+                    <history>7d</history>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <description>systemd ActiveState of mountsentinel.service. Expected: active</description>
+                    <tags>
+                        <tag>
+                            <tag>component</tag>
+                            <value>service</value>
+                        </tag>
+                    </tags>
+                </item>
+                <item>
+                    <uuid>9f8e7d6c5b4a43928170c1d2e3f40011</uuid>
+                    <name>Service: sub state</name>
+                    <type>ZABBIX_PASSIVE</type>
+                    <key>systemd.unit.info[mountsentinel.service,SubState]</key>
+                    <delay>60s</delay>
+                    <history>7d</history>
+                    <trends>0</trends>
+                    <value_type>CHAR</value_type>
+                    <description>systemd SubState of mountsentinel.service. Expected: running</description>
+                    <tags>
+                        <tag>
+                            <tag>component</tag>
+                            <value>service</value>
+                        </tag>
+                    </tags>
+                </item>
+            </items>
+            <macros>
+                <macro>
+                    <macro>{$MOUNTSENTINEL.REBOOT.WARN}</macro>
+                    <value>3</value>
+                    <description>Reboot count threshold per mount within the backoff window. Override per-host as needed.</description>
+                </macro>
+            </macros>
+            <discovery_rules>
+                <discovery_rule>
+                    <uuid>9f8e7d6c5b4a43928170c1d2e3f40030</uuid>
+                    <name>Mount discovery</name>
+                    <type>ZABBIX_PASSIVE</type>
+                    <key>mountsentinel.discovery</key>
+                    <delay>300s</delay>
+                    <description>Discover watched mounts from mountsentinel LLD. Returns standard Zabbix LLD JSON with macros {#MOUNT}, {#DEVICE}, {#LABEL}.</description>
+                    <item_prototypes>
+                        <item_prototype>
+                            <uuid>9f8e7d6c5b4a43928170c1d2e3f40040</uuid>
+                            <name>Mount [{#MOUNT}]: state</name>
+                            <type>ZABBIX_PASSIVE</type>
+                            <key>mountsentinel.state[{#MOUNT}]</key>
+                            <delay>60s</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <value_type>CHAR</value_type>
+                            <description>Current state of mount {#MOUNT} (device: {#DEVICE}, label: {#LABEL}).
+HEALTHY    - read-write, no issues
+DETECTED   - read-only detected; reboot scheduled after backoff delay
+SUPPRESSED - max backoff reached; auto-reboot stopped; run: mountsentinel reset --mount {#MOUNT}
+REBOOTING  - reboot executing (transient)</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>mount</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>9f8e7d6c5b4a43928170c1d2e3f40041</uuid>
+                            <name>Mount [{#MOUNT}]: reboot count</name>
+                            <type>ZABBIX_PASSIVE</type>
+                            <key>mountsentinel.reboot_count[{#MOUNT}]</key>
+                            <delay>60s</delay>
+                            <history>90d</history>
+                            <trends>365d</trends>
+                            <value_type>UNSIGNED</value_type>
+                            <description>Number of reboots triggered for mount {#MOUNT} within the configured backoff window.</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>mount</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>9f8e7d6c5b4a43928170c1d2e3f40042</uuid>
+                            <name>Mount [{#MOUNT}]: last event</name>
+                            <type>ZABBIX_PASSIVE</type>
+                            <key>mountsentinel.last_event[{#MOUNT}]</key>
+                            <delay>60s</delay>
+                            <history>30d</history>
+                            <trends>0</trends>
+                            <value_type>CHAR</value_type>
+                            <description>ISO8601 timestamp of the last reboot triggered for mount {#MOUNT}. Empty if no reboot has occurred.</description>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>mount</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                        <item_prototype>
+                            <uuid>9f8e7d6c5b4a43928170c1d2e3f40043</uuid>
+                            <name>Mount [{#MOUNT}]: suppressed</name>
+                            <type>ZABBIX_PASSIVE</type>
+                            <key>mountsentinel.suppressed[{#MOUNT}]</key>
+                            <delay>60s</delay>
+                            <history>30d</history>
+                            <trends>365d</trends>
+                            <value_type>UNSIGNED</value_type>
+                            <description>1 if mount {#MOUNT} has reached max backoff and auto-reboot is suppressed. Run: mountsentinel reset --mount {#MOUNT}</description>
+                            <valuemap>
+                                <name>MountSentinel suppressed flag</name>
+                            </valuemap>
+                            <tags>
+                                <tag>
+                                    <tag>component</tag>
+                                    <value>mount</value>
+                                </tag>
+                            </tags>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <uuid>9f8e7d6c5b4a43928170c1d2e3f40050</uuid>
+                            <expression>last(/MountSentinel by Zabbix agent/mountsentinel.state[{#MOUNT}])="DETECTED"</expression>
+                            <name>MountSentinel: mount {#MOUNT} is read-only on {HOST.NAME} (reboot pending)</name>
+                            <priority>AVERAGE</priority>
+                            <description>Mount {#MOUNT} ({#DEVICE}) detected as read-only. Reboot is scheduled after the backoff delay.</description>
+                            <tags>
+                                <tag>
+                                    <tag>scope</tag>
+                                    <value>availability</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>9f8e7d6c5b4a43928170c1d2e3f40051</uuid>
+                            <expression>last(/MountSentinel by Zabbix agent/mountsentinel.state[{#MOUNT}])="SUPPRESSED" or last(/MountSentinel by Zabbix agent/mountsentinel.suppressed[{#MOUNT}])=1</expression>
+                            <name>MountSentinel: mount {#MOUNT} suppressed on {HOST.NAME} — operator action required</name>
+                            <priority>HIGH</priority>
+                            <description>Mount {#MOUNT} ({#DEVICE}) exceeded max backoff. Auto-reboot suppressed. Investigate storage issue then run: mountsentinel reset --mount {#MOUNT}</description>
+                            <manual_close>YES</manual_close>
+                            <tags>
+                                <tag>
+                                    <tag>scope</tag>
+                                    <value>availability</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>9f8e7d6c5b4a43928170c1d2e3f40052</uuid>
+                            <expression>last(/MountSentinel by Zabbix agent/mountsentinel.state[{#MOUNT}])="REBOOTING"</expression>
+                            <name>MountSentinel: mount {#MOUNT} triggered a reboot on {HOST.NAME}</name>
+                            <priority>WARNING</priority>
+                            <description>Mount {#MOUNT} ({#DEVICE}) is in REBOOTING state. System reboot was triggered. Transient — host will be briefly unavailable.</description>
+                            <tags>
+                                <tag>
+                                    <tag>scope</tag>
+                                    <value>availability</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <uuid>9f8e7d6c5b4a43928170c1d2e3f40053</uuid>
+                            <expression>last(/MountSentinel by Zabbix agent/mountsentinel.reboot_count[{#MOUNT}])&gt;={$MOUNTSENTINEL.REBOOT.WARN}</expression>
+                            <name>MountSentinel: mount {#MOUNT} reboot count is high on {HOST.NAME} ({ITEM.LASTVALUE})</name>
+                            <priority>WARNING</priority>
+                            <description>Mount {#MOUNT} ({#DEVICE}) has triggered {ITEM.LASTVALUE} reboots within the backoff window (threshold: {$MOUNTSENTINEL.REBOOT.WARN}). Investigate before suppression is reached.</description>
+                            <tags>
+                                <tag>
+                                    <tag>scope</tag>
+                                    <value>performance</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                </discovery_rule>
+            </discovery_rules>
+            <valuemaps>
+                <valuemap>
+                    <uuid>9f8e7d6c5b4a43928170c1d2e3f40060</uuid>
+                    <name>MountSentinel suppressed flag</name>
+                    <mappings>
+                        <mapping>
+                            <value>0</value>
+                            <newvalue>Active</newvalue>
+                        </mapping>
+                        <mapping>
+                            <value>1</value>
+                            <newvalue>Suppressed (operator action required)</newvalue>
+                        </mapping>
+                    </mappings>
+                </valuemap>
+            </valuemaps>
+        </template>
+    </templates>
+    <triggers>
+        <trigger>
+            <uuid>9f8e7d6c5b4a43928170c1d2e3f40020</uuid>
+            <expression>last(/MountSentinel by Zabbix agent/systemd.unit.info[mountsentinel.service,ActiveState])&lt;&gt;"active"</expression>
+            <name>MountSentinel: service is not running on {HOST.NAME}</name>
+            <priority>HIGH</priority>
+            <description>mountsentinel.service ActiveState is not "active". Current value: {ITEM.LASTVALUE}.</description>
+            <tags>
+                <tag>
+                    <tag>scope</tag>
+                    <value>availability</value>
+                </tag>
+            </tags>
+        </trigger>
+        <trigger>
+            <uuid>9f8e7d6c5b4a43928170c1d2e3f40021</uuid>
+            <expression>last(/MountSentinel by Zabbix agent/systemd.unit.info[mountsentinel.service,SubState])="failed"</expression>
+            <name>MountSentinel: service has failed on {HOST.NAME}</name>
+            <priority>DISASTER</priority>
+            <description>mountsentinel.service SubState is "failed". Filesystem RO detection is not running. Immediate investigation required.</description>
+            <tags>
+                <tag>
+                    <tag>scope</tag>
+                    <value>availability</value>
+                </tag>
+            </tags>
+        </trigger>
+    </triggers>
+</zabbix_export>
