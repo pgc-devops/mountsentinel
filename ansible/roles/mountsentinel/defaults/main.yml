@@ -85,6 +85,9 @@ mountsentinel_notify_webhook_body_template: ""
 # ---------------------------------------------------------------------------
 mountsentinel_zabbix_enabled: false
 mountsentinel_zabbix_state_file: "/run/mountsentinel/zabbix.json"
+# OS user the Zabbix agent runs as. Added to the mountsentinel group so it can
+# read /etc/mountsentinel.yml (mode 640, group mountsentinel) for status commands.
+mountsentinel_zabbix_agent_user: "zabbix"
 
 # ---------------------------------------------------------------------------
 # Prometheus metrics

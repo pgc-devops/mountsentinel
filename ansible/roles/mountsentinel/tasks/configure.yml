@@ -8,6 +8,13 @@
     mode: "0640"
   notify: Reload mountsentinel config
 
+- name: Add Zabbix agent user to mountsentinel group
+  ansible.builtin.user:
+    name: "{{ mountsentinel_zabbix_agent_user }}"
+    groups: mountsentinel
+    append: true
+  when: mountsentinel_zabbix_enabled | bool
+
 - name: Enable and start mountsentinel service
   ansible.builtin.systemd:
     name: mountsentinel
