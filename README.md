@@ -358,20 +358,56 @@ mountsentinel writes `/run/mountsentinel/zabbix.json` (tmpfs, always writable) o
      state_file: "/run/mountsentinel/zabbix.json"
    ```
 
-2. Install agent config (done automatically by `scripts/install.sh`):
+2. Install agent config (done automatically by `scripts/install.sh` and the Ansible role):
    ```bash
    sudo cp dist/zabbix/mountsentinel.conf /etc/zabbix/zabbix_agentd.d/
    sudo systemctl restart zabbix-agent
    ```
 
-3. In Zabbix UI:
-   - Create **Discovery Rule**: key `mountsentinel.discovery` — auto-creates items per mount
-   - Create **Item Prototypes** using `{#MOUNT}` macro:
-     - `mountsentinel.state[{#MOUNT}]` — HEALTHY / DETECTED / SUPPRESSED / REBOOTING
-     - `mountsentinel.reboot_count[{#MOUNT}]` — integer counter
-     - `mountsentinel.last_event[{#MOUNT}]` — ISO8601 timestamp
-     - `mountsentinel.suppressed[{#MOUNT}]` — 0 or 1
-   - Create **Trigger**: alert when `mountsentinel.state[*] <> "HEALTHY"`
+3. Import the Zabbix template:
+   - In Zabbix UI: **Configuration → Templates → Import**
+   - Select `dist/zabbix/mountsentinel_template.xml`
+   - Requires Zabbix 6.4+
+   - Apply the template to hosts running mountsentinel
+
+### Template
+
+`dist/zabbix/mountsentinel_template.xml` — Zabbix 6.4 template with full LLD discovery, triggers, and a graph.
+
+**Host-level items** (passive Zabbix agent, 60s interval):
+
+| Item | Key | Description |
+|---|---|---|
+| Service: active state | `systemd.unit.info[mountsentinel.service,ActiveState]` | Expected: `active` |
+| Service: sub state | `systemd.unit.info[mountsentinel.service,SubState]` | Expected: `running` |
+
+**LLD discovery** (key `mountsentinel.discovery`, 5 min interval) — auto-creates per-mount items:
+
+| Item prototype | Key | Type |
+|---|---|---|
+| Mount `{#MOUNT}`: state | `mountsentinel.state[{#MOUNT}]` | HEALTHY / DETECTED / SUPPRESSED / REBOOTING |
+| Mount `{#MOUNT}`: reboot count | `mountsentinel.reboot_count[{#MOUNT}]` | Integer counter within backoff window |
+| Mount `{#MOUNT}`: last event | `mountsentinel.last_event[{#MOUNT}]` | ISO8601 timestamp of last reboot |
+| Mount `{#MOUNT}`: suppressed | `mountsentinel.suppressed[{#MOUNT}]` | 0 = active, 1 = suppressed |
+
+**Triggers**:
+
+| Trigger | Severity | Condition |
+|---|---|---|
+| Service is not running | High | ActiveState ≠ `active` |
+| Service has failed | Disaster | SubState = `failed` |
+| Mount is read-only (reboot pending) | Average | state = `DETECTED` |
+| Mount suppressed — operator action required | High | state = `SUPPRESSED` or suppressed = 1 |
+| Mount triggered a reboot | Warning | state = `REBOOTING` |
+| Reboot count is high | Warning | reboot_count ≥ `{$MOUNTSENTINEL.REBOOT.WARN}` |
+
+The SUPPRESSED trigger has **manual close** enabled — acknowledge after running `mountsentinel reset`.
+
+**Macros**:
+
+| Macro | Default | Description |
+|---|---|---|
+| `{$MOUNTSENTINEL.REBOOT.WARN}` | `3` | Reboot count threshold for the high-reboot-count trigger |
 
 ### Architecture
 
