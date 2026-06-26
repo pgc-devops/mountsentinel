@@ -1,5 +1,14 @@
 # mountsentinel
 
+[![Status: Alpha](https://img.shields.io/badge/status-alpha-orange)](https://github.com/pgc-devops/mountsentinel)
+[![CI](https://github.com/pgc-devops/mountsentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/pgc-devops/mountsentinel/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/pgc-devops/mountsentinel)](https://github.com/pgc-devops/mountsentinel/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Go 1.22+](https://img.shields.io/badge/go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev/dl/)
+[![Platform: Linux](https://img.shields.io/badge/platform-linux-lightgrey?logo=linux&logoColor=white)](#supported-distributions)
+
+> **Alpha software.** Interfaces, config schema, and state file format may change without notice between releases. Not recommended for production use without testing in your environment first.
+
 Linux filesystem read-only monitor for iSCSI SAN environments. Detects when a VM's filesystem is remounted read-only (due to SAN failover or network interruption), waits a configurable delay, then reboots the VM. Implements exponential backoff to prevent reboot storms when the underlying issue persists.
 
 Designed to run on Linux VMs under XenServer or XCP-ng with iSCSI SAN storage.
