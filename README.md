@@ -503,3 +503,10 @@ sudo mount -o remount,rw /data
 - Full systemd sandboxing: `ProtectSystem=strict`, `PrivateTmp`, `MemoryDenyWriteExecute`, `NoNewPrivileges`
 - Config file: mode 640, `root:mountsentinel` — readable by service user, not world
 - State directory: `/var/lib/mountsentinel/` mode 750, owned by `mountsentinel`
+
+---
+
+## Authors
+
+- **Michael Moscovitch** — developer
+- **Claude (Anthropic)** — AI assistant
