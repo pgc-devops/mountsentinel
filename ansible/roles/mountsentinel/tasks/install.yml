@@ -1,0 +1,82 @@
+---
+- name: Assert supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian', 'RedHat']
+    fail_msg: >-
+      mountsentinel requires systemd >= 229. Unsupported OS family '{{ ansible_os_family }}'.
+      Supported: Debian (Ubuntu 18.04+, Debian 9+), RedHat (RHEL/Rocky/Alma 8+).
+
+- name: Map CPU architecture to package suffix
+  ansible.builtin.set_fact:
+    _ms_deb_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+    _ms_rpm_arch: "{{ 'x86_64' if ansible_architecture == 'x86_64' else 'aarch64' }}"
+
+- name: Check currently installed version
+  ansible.builtin.command: /usr/local/bin/mountsentinel --version
+  register: _ms_installed_ver
+  changed_when: false
+  failed_when: false
+
+- name: Set install-needed flag
+  ansible.builtin.set_fact:
+    _ms_needs_install: >-
+      {{ _ms_installed_ver.rc != 0 or
+         (_ms_installed_ver.stdout | trim) != _ms_version }}
+
+# --- Debian / Ubuntu ---
+- name: Install mountsentinel .deb
+  when:
+    - ansible_os_family == 'Debian'
+    - _ms_needs_install | bool
+  block:
+    - name: Set .deb filename
+      ansible.builtin.set_fact:
+        _ms_pkg_file: "mountsentinel_{{ _ms_version }}_{{ _ms_deb_arch }}.deb"
+
+    - name: Download .deb from GitHub releases
+      ansible.builtin.get_url:
+        url: "https://github.com/{{ mountsentinel_github_repo }}/releases/download/v{{ _ms_version }}/{{ _ms_pkg_file }}"
+        dest: "/tmp/{{ _ms_pkg_file }}"
+        mode: "0644"
+        timeout: 60
+      notify: Restart mountsentinel
+
+    - name: Install .deb package
+      ansible.builtin.apt:
+        deb: "/tmp/{{ _ms_pkg_file }}"
+        state: present
+
+    - name: Remove downloaded .deb
+      ansible.builtin.file:
+        path: "/tmp/{{ _ms_pkg_file }}"
+        state: absent
+
+# --- RHEL / Rocky / AlmaLinux ---
+- name: Install mountsentinel .rpm
+  when:
+    - ansible_os_family == 'RedHat'
+    - _ms_needs_install | bool
+  block:
+    - name: Set .rpm filename
+      ansible.builtin.set_fact:
+        _ms_pkg_file: "mountsentinel-{{ _ms_version }}.{{ _ms_rpm_arch }}.rpm"
+
+    - name: Download .rpm from GitHub releases
+      ansible.builtin.get_url:
+        url: "https://github.com/{{ mountsentinel_github_repo }}/releases/download/v{{ _ms_version }}/{{ _ms_pkg_file }}"
+        dest: "/tmp/{{ _ms_pkg_file }}"
+        mode: "0644"
+        timeout: 60
+      notify: Restart mountsentinel
+
+    - name: Install .rpm package
+      ansible.builtin.dnf:
+        name: "/tmp/{{ _ms_pkg_file }}"
+        state: present
+        disable_gpg_check: true
+
+    - name: Remove downloaded .rpm
+      ansible.builtin.file:
+        path: "/tmp/{{ _ms_pkg_file }}"
+        state: absent

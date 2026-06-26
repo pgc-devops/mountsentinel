@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  role_name: mountsentinel
+  author: pgc-devops
+  description: >-
+    Deploy and configure mountsentinel — a filesystem read-only monitor and
+    automatic recovery daemon for iSCSI SAN environments.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - bionic     # 18.04 LTS — systemd 237
+        - focal      # 20.04 LTS — systemd 245
+        - jammy      # 22.04 LTS — systemd 249
+        - noble      # 24.04 LTS — systemd 255
+    - name: Debian
+      versions:
+        - stretch    # 9  — systemd 231
+        - buster     # 10 — systemd 241
+        - bullseye   # 11 — systemd 247
+        - bookworm   # 12 — systemd 252
+    - name: EL
+      versions:
+        - "8"        # RHEL/Rocky/AlmaLinux 8 — systemd 239
+        - "9"        # RHEL/Rocky/AlmaLinux 9 — systemd 252
+
+dependencies: []

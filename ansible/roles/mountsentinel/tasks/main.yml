@@ -1,0 +1,30 @@
+---
+- name: Resolve target version
+  when: mountsentinel_enabled | bool
+  block:
+    - name: Fetch latest release tag from GitHub API
+      ansible.builtin.uri:
+        url: "https://api.github.com/repos/{{ mountsentinel_github_repo }}/releases/latest"
+        return_content: true
+        headers:
+          Accept: "application/vnd.github.v3+json"
+        timeout: 15
+      register: _ms_github_release
+      when: mountsentinel_version == "latest"
+
+    - name: Set resolved version fact
+      ansible.builtin.set_fact:
+        _ms_version: >-
+          {{
+            _ms_github_release.json.tag_name | regex_replace('^v', '')
+            if mountsentinel_version == 'latest'
+            else mountsentinel_version | string | regex_replace('^v', '')
+          }}
+
+- name: Install mountsentinel
+  ansible.builtin.include_tasks: install.yml
+  when: mountsentinel_enabled | bool
+
+- name: Configure and start mountsentinel
+  ansible.builtin.include_tasks: configure.yml
+  when: mountsentinel_enabled | bool

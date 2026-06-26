@@ -1,0 +1,99 @@
+# Managed by Ansible — local edits will be overwritten on next run.
+# Role: mountsentinel  Host: {{ inventory_hostname }}
+---
+daemon:
+  check_interval: "{{ mountsentinel_check_interval }}"
+  dry_run: {{ mountsentinel_dry_run | bool | lower }}
+  log_level: "{{ mountsentinel_log_level }}"
+  proc_mounts_path: "{{ mountsentinel_proc_mounts_path }}"
+
+{% if mountsentinel_watch_mounts %}
+watch_mounts:
+{% for mount in mountsentinel_watch_mounts %}
+  - mountpoint: "{{ mount.mountpoint }}"
+{% if mount.device is defined and mount.device %}
+    device: "{{ mount.device }}"
+{% endif %}
+{% if mount.label is defined and mount.label %}
+    label: "{{ mount.label }}"
+{% endif %}
+{% if mount.exclude is defined and mount.exclude %}
+    exclude:
+{% for path in mount.exclude %}
+      - "{{ path }}"
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% else %}
+watch_mounts: []
+{% endif %}
+
+reboot:
+  enabled: {{ mountsentinel_reboot_enabled | bool | lower }}
+  delay: "{{ mountsentinel_reboot_delay }}"
+{% if mountsentinel_pre_reboot_hooks %}
+  pre_reboot_hooks:
+{% for hook in mountsentinel_pre_reboot_hooks %}
+    - cmd: "{{ hook.cmd }}"
+{% if hook.args is defined and hook.args %}
+      args:
+{% for arg in hook.args %}
+        - "{{ arg }}"
+{% endfor %}
+{% endif %}
+{% if hook.timeout is defined and hook.timeout %}
+      timeout: "{{ hook.timeout }}"
+{% endif %}
+{% endfor %}
+{% else %}
+  pre_reboot_hooks: []
+{% endif %}
+
+backoff:
+  window: "{{ mountsentinel_backoff_window }}"
+  base_delay: "{{ mountsentinel_backoff_base_delay }}"
+  multiplier: {{ mountsentinel_backoff_multiplier }}
+  max_delay: "{{ mountsentinel_backoff_max_delay }}"
+  jitter: "{{ mountsentinel_backoff_jitter }}"
+
+state:
+  backend: "{{ mountsentinel_state_backend }}"
+{% if mountsentinel_state_backend == 'file' %}
+  file_path: "{{ mountsentinel_state_file_path }}"
+{% elif mountsentinel_state_backend == 'remote' %}
+  remote_url: "{{ mountsentinel_state_remote_url }}"
+{% endif %}
+{% if mountsentinel_state_fallback_backends %}
+  fallback_backends:
+{% for backend in mountsentinel_state_fallback_backends %}
+    - "{{ backend }}"
+{% endfor %}
+{% else %}
+  fallback_backends: []
+{% endif %}
+
+{% if mountsentinel_notify_webhook_url %}
+notify:
+  webhook:
+    url: "{{ mountsentinel_notify_webhook_url }}"
+    method: "{{ mountsentinel_notify_webhook_method }}"
+    timeout: "{{ mountsentinel_notify_webhook_timeout }}"
+{% if mountsentinel_notify_webhook_headers %}
+    headers:
+{% for key, value in mountsentinel_notify_webhook_headers.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+{% if mountsentinel_notify_webhook_body_template %}
+    body_template: |
+      {{ mountsentinel_notify_webhook_body_template | indent(6) }}
+{% endif %}
+{% endif %}
+
+zabbix:
+  enabled: {{ mountsentinel_zabbix_enabled | bool | lower }}
+  state_file: "{{ mountsentinel_zabbix_state_file }}"
+
+metrics:
+  enabled: {{ mountsentinel_metrics_enabled | bool | lower }}
+  addr: "{{ mountsentinel_metrics_addr }}"

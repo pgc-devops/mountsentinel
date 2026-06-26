@@ -1,0 +1,93 @@
+---
+# Set false to skip the entire role without removing tasks from the play.
+mountsentinel_enabled: true
+
+# GitHub release to install. "latest" resolves via the GitHub API at run time.
+# Pin to a specific version (without leading 'v') for reproducible deployments.
+mountsentinel_version: "latest"
+mountsentinel_github_repo: "pgc-devops/mountsentinel"
+
+# ---------------------------------------------------------------------------
+# Daemon
+# ---------------------------------------------------------------------------
+mountsentinel_check_interval: "30s"
+mountsentinel_log_level: "info"        # info | debug | verbose
+mountsentinel_dry_run: false           # true = log reboot decisions, never execute
+mountsentinel_proc_mounts_path: "/proc/1/mounts"  # override in container/test envs
+
+# ---------------------------------------------------------------------------
+# Reboot
+# ---------------------------------------------------------------------------
+mountsentinel_reboot_enabled: true
+mountsentinel_reboot_delay: "5m"
+
+# Commands to run before rebooting. Failures are logged, never block the reboot.
+# mountsentinel_pre_reboot_hooks:
+#   - cmd: "/usr/local/bin/notify-oncall.sh"
+#     args: ["--host", "{{ inventory_hostname }}"]
+#     timeout: "30s"
+mountsentinel_pre_reboot_hooks: []
+
+# ---------------------------------------------------------------------------
+# Mount points to watch
+# ---------------------------------------------------------------------------
+# At least one entry required. Provide specific mounts or use wildcard.
+# mountsentinel_watch_mounts:
+#   - mountpoint: "/data"
+#     device: "/dev/sdb1"     # optional — match by device instead of path
+#     label: "iscsi-data"     # optional — included in log/notify output
+#   - mountpoint: "*"         # wildcard: watch all mounts minus exclude list
+#     exclude:
+#       - "/proc"
+#       - "/sys"
+#       - "/dev"
+#       - "/run"
+#       - "/tmp"
+mountsentinel_watch_mounts: []
+
+# ---------------------------------------------------------------------------
+# Backoff
+# ---------------------------------------------------------------------------
+mountsentinel_backoff_window: "24h"
+mountsentinel_backoff_base_delay: "5m"
+mountsentinel_backoff_multiplier: 2.0
+mountsentinel_backoff_max_delay: "4h"
+mountsentinel_backoff_jitter: "30s"
+
+# ---------------------------------------------------------------------------
+# State backend
+# ---------------------------------------------------------------------------
+# file     - /var/lib/mountsentinel/state.json (persists across reboots; risky if / goes ro)
+# tmpfs    - /run/mountsentinel/state.json     (always writable RAM; recommended for iSCSI)
+# xenstore - XCP-ng/XenServer VMs only
+# memory   - in-process only; lost on daemon restart
+# remote   - HTTP PUT/GET to mountsentinel_state_remote_url
+mountsentinel_state_backend: "file"
+mountsentinel_state_file_path: "/var/lib/mountsentinel/state.json"
+mountsentinel_state_remote_url: ""
+mountsentinel_state_fallback_backends:
+  - "tmpfs"
+  - "memory"
+
+# ---------------------------------------------------------------------------
+# Notifications (webhook)
+# ---------------------------------------------------------------------------
+mountsentinel_notify_webhook_url: ""
+mountsentinel_notify_webhook_method: "POST"
+mountsentinel_notify_webhook_timeout: "10s"
+# Map of extra headers, e.g. {"Authorization": "Token token=xxx"}
+mountsentinel_notify_webhook_headers: {}
+# Go text/template string. Variables: .Hostname .Mountpoint .Event .RebootCount
+mountsentinel_notify_webhook_body_template: ""
+
+# ---------------------------------------------------------------------------
+# Zabbix
+# ---------------------------------------------------------------------------
+mountsentinel_zabbix_enabled: false
+mountsentinel_zabbix_state_file: "/run/mountsentinel/zabbix.json"
+
+# ---------------------------------------------------------------------------
+# Prometheus metrics
+# ---------------------------------------------------------------------------
+mountsentinel_metrics_enabled: false
+mountsentinel_metrics_addr: ":9101"

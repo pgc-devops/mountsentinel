@@ -1,0 +1,16 @@
+---
+- name: Deploy mountsentinel config
+  ansible.builtin.template:
+    src: mountsentinel.yml.j2
+    dest: /etc/mountsentinel.yml
+    owner: root
+    group: mountsentinel
+    mode: "0640"
+  notify: Reload mountsentinel config
+
+- name: Enable and start mountsentinel service
+  ansible.builtin.systemd:
+    name: mountsentinel
+    enabled: true
+    state: started
+    daemon_reload: false

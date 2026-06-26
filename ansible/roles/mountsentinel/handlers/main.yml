@@ -1,0 +1,23 @@
+---
+# Triggered by package install. Full stop+start picks up new binary.
+- name: Restart mountsentinel
+  ansible.builtin.systemd:
+    name: mountsentinel
+    state: restarted
+    daemon_reload: true
+
+# Triggered by config file change. Sends SIGHUP; daemon reloads config without
+# restarting. Falls back to restart if the service is not yet running.
+- name: Reload mountsentinel config
+  ansible.builtin.systemd:
+    name: mountsentinel
+    state: reloaded
+  failed_when: false
+  register: _ms_reload_result
+
+- name: Restart mountsentinel after failed reload
+  ansible.builtin.systemd:
+    name: mountsentinel
+    state: restarted
+    daemon_reload: false
+  when: _ms_reload_result is failed
